@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.dev/
+
+# Local tooling / editor state
+.stepcode/
+.browser-shots/
+.vscode/
+.idea/
+*.local
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# OS noise
+.DS_Store
+Thumbs.db
+Desktop.ini

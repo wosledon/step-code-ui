@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#f7f7f5" />
+		<title>StepCode</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem("step-ui-theme");
+				const dark = saved === "dark" || (saved !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+				document.documentElement.dataset.theme = dark ? "dark" : "light";
+				document.documentElement.style.colorScheme = dark ? "dark" : "light";
+			})();
+		</script>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/web/main.tsx"></script>
+	</body>
+</html>
