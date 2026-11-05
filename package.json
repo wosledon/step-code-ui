@@ -2,6 +2,7 @@
   "name": "step-code-ui",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Web UI for the StepCode CLI: /ui command starts an ACP (Agent Client Protocol) bridge plus a React + TypeScript client that exposes the full CLI feature set.",
   "scripts": {
