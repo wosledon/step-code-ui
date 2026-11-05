@@ -55,6 +55,10 @@ function truncate(text: string, max = 120): string {
 	return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 }
 
+function limitOutput(text: string, max: number): string {
+	return text.length > max ? `${text.slice(0, max)}\n…` : text;
+}
+
 /** Human readable one-line title, e.g. `read src/index.ts`. */
 export function toolTitleFor(toolName: string, args: unknown): string {
 	const record = (args ?? {}) as Record<string, unknown>;
@@ -94,14 +98,22 @@ export function toolResultContent(result: unknown, isError: boolean): ToolCallCo
 	}
 	if (text.length === 0 && typeof record.text === "string") text = record.text;
 	if (text.length > 0) {
-		content.push({ type: "content", content: { type: "text", text: truncate(text, 20000) } });
+		content.push({ type: "content", content: { type: "text", text: limitOutput(text, 20000) } });
 	}
 	const details = (record.details ?? {}) as Record<string, unknown>;
 	const diff = diffFromDetails(details, record);
 	if (diff) content.push(diff);
+	const patch = firstString(details.diff, details.patch, details.unifiedDiff, record.diff, record.patch);
+	if (patch && !text.includes(patch)) {
+		const path = firstString(details.path, details.filePath, details.file_path, record.path) ?? "";
+		content.push({
+			type: "content",
+			content: { type: "text", text: limitOutput(patch, 20000), _meta: { stepDiff: true, path } },
+		});
+	}
 	if (content.length === 0) {
 		const fallback = JSON.stringify(result ?? {});
-		content.push({ type: "content", content: { type: "text", text: truncate(fallback, 4000) } });
+		content.push({ type: "content", content: { type: "text", text: limitOutput(fallback, 4000) } });
 	}
 	if (isError && content.length > 0) {
 		// Keep errors visible even when the agent produced no text payload.
@@ -115,7 +127,7 @@ export function toolResultContent(result: unknown, isError: boolean): ToolCallCo
 
 /** Extract a diff payload when the tool result carries one. */
 function diffFromDetails(details: Record<string, unknown>, result: Record<string, unknown>): ToolCallContent | null {
-	const path = firstString(details.path, result.path);
+	const path = firstString(details.path, details.filePath, details.file_path, result.path);
 	if (!path) return null;
 	const newText = firstString(details.newText, details.newString, details.new_string, details.content);
 	if (newText === undefined) return null;

@@ -11,7 +11,8 @@ export interface ChatMessage {
 
 export type ToolContent =
 	| { type: "text"; text: string }
-	| { type: "diff"; path: string; oldText: string | null; newText: string };
+	| { type: "diff"; path: string; oldText: string | null; newText: string }
+	| { type: "patch"; path: string; patch: string };
 
 export interface ToolCallState {
 	id: string;
@@ -248,6 +249,7 @@ export function reducer(state: BridgeState, action: Action): BridgeState {
 			};
 		case "tool/upsert": {
 			const index = state.tools.findIndex((tool) => tool.id === action.tool.id);
+			const hasDiff = action.tool.content?.some((content) => content.type === "diff" || content.type === "patch") ?? false;
 			if (index < 0) {
 				const tool: ToolCallState = {
 					title: action.tool.title ?? "Tool call",
@@ -255,13 +257,14 @@ export function reducer(state: BridgeState, action: Action): BridgeState {
 					status: action.tool.status ?? "pending",
 					content: [],
 					locations: [],
-					expanded: false,
 					...action.tool,
+					expanded: action.tool.expanded ?? hasDiff,
 				};
 				return { ...state, tools: [...state.tools, tool], items: [...state.items, { kind: "tool", id: tool.id }] };
 			}
 			const tools = [...state.tools];
-			tools[index] = { ...tools[index], ...action.tool };
+			const hadDiff = tools[index].content.some((content) => content.type === "diff" || content.type === "patch");
+			tools[index] = { ...tools[index], ...action.tool, expanded: action.tool.expanded ?? (tools[index].expanded || (hasDiff && !hadDiff)) };
 			return { ...state, tools };
 		}
 		case "tool/toggle":

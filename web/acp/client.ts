@@ -22,6 +22,17 @@ function textOf(block: ContentBlock | undefined): string {
 	return "";
 }
 
+function patchPath(patch: string, fallback: string): string {
+	if (fallback) return fallback;
+	const added = /^\+\+\+\s+(?:b\/)?([^\t\n]+)/m.exec(patch)?.[1]?.trim();
+	const removed = /^---\s+(?:a\/)?([^\t\n]+)/m.exec(patch)?.[1]?.trim();
+	return (added && added !== "/dev/null" ? added : removed && removed !== "/dev/null" ? removed : "");
+}
+
+function isUnifiedDiff(text: string): boolean {
+	return /^@@ -\d+/m.test(text) && (/^diff --git /m.test(text) || (/^--- /m.test(text) && /^\+\+\+ /m.test(text)));
+}
+
 function toToolContent(blocks: unknown): ToolContent[] {
 	const list = Array.isArray(blocks) ? (blocks as Array<Record<string, unknown>>) : [];
 	const content: ToolContent[] = [];
@@ -41,7 +52,12 @@ function toToolContent(blocks: unknown): ToolContent[] {
 		}
 		const inner = block?.content as Record<string, unknown> | undefined;
 		if (inner?.type === "text" && typeof inner.text === "string") {
-			content.push({ type: "text", text: inner.text });
+			const metadata = (inner._meta ?? {}) as Record<string, unknown>;
+			if (metadata.stepDiff === true || isUnifiedDiff(inner.text)) {
+				content.push({ type: "patch", path: patchPath(inner.text, String(metadata.path ?? "")), patch: inner.text });
+			} else {
+				content.push({ type: "text", text: inner.text });
+			}
 		} else if (inner?.type === "image") {
 			content.push({ type: "text", text: "[image]" });
 		}
